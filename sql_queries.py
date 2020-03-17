@@ -5,46 +5,135 @@ import configparser
 config = configparser.ConfigParser()
 config.read('dwh.cfg')
 
+# GLOBAL VARIABLES
+LOG_DATA = config.get("S3","LOG_DATA")
+LOG_PATH = config.get("S3", "LOG_JSONPATH")
+SONG_DATA = config.get("S3", "SONG_DATA")
+IAM_ROLE = config.get("IAM_ROLE","ARN")
+
 # DROP TABLES
 
-staging_events_table_drop = ""
-staging_songs_table_drop = ""
-songplay_table_drop = ""
-user_table_drop = ""
-song_table_drop = ""
-artist_table_drop = ""
-time_table_drop = ""
+staging_events_table_drop = "DROP TABLE IF EXISTS staging_events;"
+staging_songs_table_drop = "DROP TABLE IF EXISTS staging_songs;"
+songplay_table_drop = "DROP TABLE IF EXISTS songplay;"
+user_table_drop = "DROP TABLE IF EXISTS users;"
+song_table_drop = "DROP TABLE IF EXISTS songs;"
+artist_table_drop = "DROP TABLE IF EXISTS artists;"
+time_table_drop = "DROP TABLE IF EXISTS time;"
 
 # CREATE TABLES
 
 staging_events_table_create= ("""
+CREATE TABLE staging_events (
+    artist VARCHAR,
+    auth VARCHAR,
+    firstName VARCHAR,
+    gender VARCHAR,
+    itemInSession INTEGER,
+    length FLOAT,
+    level VARCHAR,
+    location VARCHAR,
+    method VARCHAR,
+    page VARCHAR,
+    registration FLOAT,
+    sessionId INTEGER,
+    song VARCHAR,
+    status INTEGER,
+    ts INTEGER,
+    userAgent VARCHAR,
+    userId INTEGER
+);
 """)
 
 staging_songs_table_create = ("""
+CREATE TABLE staging_songs(
+    song_id VARCHAR,
+    num_songs INTEGER,
+    title VARCHAR,
+    artist_id VARCHAR,
+    artist_latitude FLOAT,
+    artist longitude FLOAT,
+    artist_location VARCHAR,
+    artist_name VARCHAR,
+    title VARCHAR,
+    duration FLOAT,
+    year INT
+);
 """)
 
 songplay_table_create = ("""
+CREATE TABLE songplay (
+    songplay_id INTEGER NOT NULL PRIMARY KEY,
+    start_time TIMESTAMP NOT NULL,
+    user_id INTEGER NOT NULL,
+    level VARCHAR(15) NOT NULL,
+    song_id VARCHAR(255) NOT NULL,
+    artist_id VARCHAR(255) NOT NULL,
+    session_id INTEGER NOT NULL,
+    location VARCHAR(80) NOT NULL,
+    user_agent VARCHAR(80) NOT NULL
+);
 """)
 
 user_table_create = ("""
+CREATE TABLE users (
+    user_id INTEGER NOT NULL PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    gender VARCHAR(7) NOT NULL,
+    level VARCHAR(15) NOT NULL
+);
 """)
 
 song_table_create = ("""
+CREATE TABLE songs (
+    song_id VARCHAR(255) NOT NULL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    artist_id VARCHAR(255) NOT NULL,
+    year INTEGER,
+    duration FLOAT
+);
 """)
 
 artist_table_create = ("""
+CREATE TABLE artists (
+    artist_id VARCHAR(255) NOT NULL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    location VARCHAR(55),
+    latitude FLOAT,
+    longitude FLOAT
+);
 """)
 
 time_table_create = ("""
+CREATE TABLE time (
+    start_time TIMESTAMP PRIMARY KEY,
+    hour INTEGER,
+    day INTEGER,
+    week INTEGER,
+    month INTEGER,
+    year INTEGER,
+    weekday BOOLEAN
+);
 """)
 
 # STAGING TABLES
 
 staging_events_copy = ("""
-""").format()
+COPY staging_events FROM {}
+CREDENTIALS 'aws_iam_role={}'
+COMPUPDATE OFF region 'us-west-2'
+TIMEFORMAT as 'epochmillisecs'
+TRUNCATECOLUMNS BLANKSASNULL EMPTYASNULL
+FORMAT AS JSON {};
+""").format(LOG_DATA, IAM_ROLE, LOG_PATH)
 
 staging_songs_copy = ("""
-""").format()
+COPY staging_songs FROM {}
+CREDENTIALS 'aws_iam_role={}'
+COMPUPDATE OFF region 'us-west-2'
+TRUNCATECOLUMNS BLANKASNULL EMPTYASNULL;
+""").format(SONG_DATA, IAM_ROLE)
 
 # FINAL TABLES
 
