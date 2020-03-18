@@ -138,9 +138,25 @@ TRUNCATECOLUMNS BLANKASNULL EMPTYASNULL;
 # FINAL TABLES
 
 songplay_table_insert = ("""
+INSERT INTO songplay (songplay_id, start_time, user_id, level, song_id, artist_id, session_id, location, user_agent)
+SELECT se.session_id AS songplay_id,
+    to_timestamp(to_char(se.ts, '9999-99-99 99:99:99'),'YYYY-MM-DD HH24:MI:SS'),
+    se.userId AS user_id,
+    se.level AS level,
+    ss.song_id AS song_id,
+    ss.artistId AS artist_id,
+    se.location AS location,
+    se.userAgent AS user_agent,
+FROM songplay_events se
+JOIN songplay_songs ss
+ON se.artist = ss.artist_name
+WHERE se.page = 'NextSong';
 """)
 
 user_table_insert = ("""
+INSERT INTO users (user_id, first_name, last_name, gender, level)
+SELECT 
+
 """)
 
 song_table_insert = ("""
