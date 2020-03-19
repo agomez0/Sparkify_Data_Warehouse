@@ -140,11 +140,11 @@ TRUNCATECOLUMNS BLANKASNULL EMPTYASNULL;
 songplay_table_insert = ("""
 INSERT INTO songplay (songplay_id, start_time, user_id, level, song_id, artist_id, session_id, location, user_agent)
 SELECT se.session_id AS songplay_id,
-    to_timestamp(to_char(se.ts, '9999-99-99 99:99:99'),'YYYY-MM-DD HH24:MI:SS'),
+    to_timestamp(to_char(se.ts, '9999-99-99 99:99:99'),'YYYY-MM-DD HH24:MI:SS') AS start_time,
     se.userId AS user_id,
     se.level AS level,
     ss.song_id AS song_id,
-    ss.artistId AS artist_id,
+    ss.artist_id AS artist_id,
     se.location AS location,
     se.userAgent AS user_agent,
 FROM songplay_events se
@@ -155,17 +155,44 @@ WHERE se.page = 'NextSong';
 
 user_table_insert = ("""
 INSERT INTO users (user_id, first_name, last_name, gender, level)
-SELECT 
-
+SELECT DISTINCT userId AS user_id,
+    firstName AS first_name,
+    lastName AS last_name,
+    gender AS gender,
+    level AS level
+FROM staging_events;
 """)
 
 song_table_insert = ("""
+INSER INTO songs (song_id, title, artist_id, year, duration)
+SELECT DISTINCT song_id AS song_id,
+    title AS title,
+    artist_id AS artist_id,
+    year AS year,
+    duration AS duration
+FROM staging_songs;
 """)
 
 artist_table_insert = ("""
+INSERT INTO artists (artist_id, name, location, latitude, longitude)
+SELECT DISTINCT artist_id AS artsit_id,
+    artist_name AS name,
+    artist_location AS lcoation,
+    artist_latitude AS latitude,
+    artist_longitude AS longitude
+FROM staging_songs;
 """)
 
 time_table_insert = ("""
+INSERT INTO time (start_time, hour, day, week, month, year, weekday)
+SELECT DISTINCT to_timestamp(to_char(se.ts, '9999-99-99 99:99:99'),'YYYY-MM-DD HH24:MI:SS') AS start_time,
+    EXTRACT (hour from ts) AS hour,
+    EXTRACT (day from ts) AS day,
+    EXTRACT (week from ts) AS day,
+    EXTRACT (month from ts) AS month,
+    EXTRACT (year from ts) AS year,
+    EXTRACT (weekday from ts) AS weekday
+FROM staging_events;
 """)
 
 # QUERY LISTS
