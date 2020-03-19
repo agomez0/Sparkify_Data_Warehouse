@@ -5,7 +5,7 @@ import configparser
 config = configparser.ConfigParser()
 config.read('dwh.cfg')
 
-# GLOBAL VARIABLES
+# VARIABLES
 LOG_DATA = config.get("S3","LOG_DATA")
 LOG_PATH = config.get("S3", "LOG_JSONPATH")
 SONG_DATA = config.get("S3", "SONG_DATA")
@@ -25,37 +25,37 @@ time_table_drop = "DROP TABLE IF EXISTS time;"
 
 staging_events_table_create= ("""
 CREATE TABLE staging_events (
-    artist VARCHAR,
+    artist VARCHAR distkey,
     auth VARCHAR,
     firstName VARCHAR,
     gender VARCHAR,
     itemInSession INTEGER,
+    lastName VARCHAR,
     length FLOAT,
     level VARCHAR,
     location VARCHAR,
     method VARCHAR,
     page VARCHAR,
     registration FLOAT,
-    sessionId INTEGER,
+    sessionId VARCHAR sortkey,
     song VARCHAR,
-    status INTEGER,
-    ts INTEGER,
+    status BIGINT,
+    ts TIMESTAMP,
     userAgent VARCHAR,
-    userId INTEGER
+    userId VARCHAR
 );
 """)
 
 staging_songs_table_create = ("""
 CREATE TABLE staging_songs(
-    song_id VARCHAR,
-    num_songs INTEGER,
+    song_id VARCHAR sortkey,
+    num_songs BIGINT,
     title VARCHAR,
     artist_id VARCHAR,
     artist_latitude FLOAT,
-    artist longitude FLOAT,
+    artist_longitude FLOAT,
     artist_location VARCHAR,
-    artist_name VARCHAR,
-    title VARCHAR,
+    artist_name VARCHAR distkey,
     duration FLOAT,
     year INT
 );
@@ -63,31 +63,31 @@ CREATE TABLE staging_songs(
 
 songplay_table_create = ("""
 CREATE TABLE songplay (
-    songplay_id INTEGER NOT NULL PRIMARY KEY,
+    songplay_id INTEGER IDENTITY(0,1) PRIMARY KEY sortkey,
     start_time TIMESTAMP NOT NULL,
-    user_id INTEGER NOT NULL,
-    level VARCHAR(15) NOT NULL,
+    user_id VARCHAR NOT NULL,
+    level VARCHAR(255) NOT NULL,
     song_id VARCHAR(255) NOT NULL,
     artist_id VARCHAR(255) NOT NULL,
-    session_id INTEGER NOT NULL,
-    location VARCHAR(80) NOT NULL,
-    user_agent VARCHAR(80) NOT NULL
+    session_id VARCHAR NOT NULL distkey,
+    location VARCHAR(255) NOT NULL,
+    user_agent VARCHAR(255) NOT NULL
 );
 """)
 
 user_table_create = ("""
 CREATE TABLE users (
-    user_id INTEGER NOT NULL PRIMARY KEY,
-    first_name VARCHAR(50) NOT NULL,
-    last_name VARCHAR(50) NOT NULL,
+    user_id VARCHAR NOT NULL PRIMARY KEY sortkey distkey,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
     gender VARCHAR(7) NOT NULL,
-    level VARCHAR(15) NOT NULL
+    level VARCHAR(255) NOT NULL
 );
 """)
 
 song_table_create = ("""
 CREATE TABLE songs (
-    song_id VARCHAR(255) NOT NULL PRIMARY KEY,
+    song_id VARCHAR(255) NOT NULL PRIMARY KEY sortkey distkey,
     title VARCHAR(255) NOT NULL,
     artist_id VARCHAR(255) NOT NULL,
     year INTEGER,
@@ -97,9 +97,9 @@ CREATE TABLE songs (
 
 artist_table_create = ("""
 CREATE TABLE artists (
-    artist_id VARCHAR(255) NOT NULL PRIMARY KEY,
+    artist_id VARCHAR(255) NOT NULL PRIMARY KEY sortkey distkey,
     name VARCHAR(255) NOT NULL,
-    location VARCHAR(55),
+    location VARCHAR(255),
     latitude FLOAT,
     longitude FLOAT
 );
@@ -107,7 +107,7 @@ CREATE TABLE artists (
 
 time_table_create = ("""
 CREATE TABLE time (
-    start_time TIMESTAMP PRIMARY KEY,
+    start_time TIMESTAMP PRIMARY KEY sortkey distkey,
     hour INTEGER,
     day INTEGER,
     week INTEGER,
@@ -120,37 +120,39 @@ CREATE TABLE time (
 # STAGING TABLES
 
 staging_events_copy = ("""
-COPY staging_events FROM {}
-CREDENTIALS 'aws_iam_role={}'
-COMPUPDATE OFF region 'us-west-2'
-TIMEFORMAT as 'epochmillisecs'
-TRUNCATECOLUMNS BLANKSASNULL EMPTYASNULL
-FORMAT AS JSON {};
+    COPY staging_events FROM {}
+    CREDENTIALS 'aws_iam_role={}'
+    COMPUPDATE OFF region 'us-west-2'
+    TIMEFORMAT as 'epochmillisecs'
+    TRUNCATECOLUMNS BLANKSASNULL EMPTYASNULL
+    FORMAT AS JSON {};
 """).format(LOG_DATA, IAM_ROLE, LOG_PATH)
 
 staging_songs_copy = ("""
-COPY staging_songs FROM {}
-CREDENTIALS 'aws_iam_role={}'
-COMPUPDATE OFF region 'us-west-2'
-TRUNCATECOLUMNS BLANKASNULL EMPTYASNULL;
+    COPY staging_songs FROM {}
+    CREDENTIALS 'aws_iam_role={}'
+    COMPUPDATE OFF region 'us-west-2'
+    TRUNCATECOLUMNS BLANKSASNULL EMPTYASNULL
+    FORMAT AS JSON 'auto';
 """).format(SONG_DATA, IAM_ROLE)
 
 # FINAL TABLES
 
 songplay_table_insert = ("""
-INSERT INTO songplay (songplay_id, start_time, user_id, level, song_id, artist_id, session_id, location, user_agent)
-SELECT se.session_id AS songplay_id,
-    to_timestamp(to_char(se.ts, '9999-99-99 99:99:99'),'YYYY-MM-DD HH24:MI:SS') AS start_time,
+INSERT INTO songplay (start_time, user_id, level, song_id, artist_id, session_id, location, user_agent)
+SELECT DISTINCT to_timestamp(to_char(se.ts, '9999-99-99 99:99:99'),'YYYY-MM-DD HH24:MI:SS') AS start_time,
+    se.sessionId AS session_id,
     se.userId AS user_id,
     se.level AS level,
     ss.song_id AS song_id,
     ss.artist_id AS artist_id,
     se.location AS location,
-    se.userAgent AS user_agent,
-FROM songplay_events se
-JOIN songplay_songs ss
+    se.userAgent AS user_agent
+FROM staging_events se
+JOIN staging_songs ss
 ON se.artist = ss.artist_name
-WHERE se.page = 'NextSong';
+WHERE se.page = 'NextSong' AND
+start_time IS NOT NULL;
 """)
 
 user_table_insert = ("""
@@ -160,39 +162,43 @@ SELECT DISTINCT userId AS user_id,
     lastName AS last_name,
     gender AS gender,
     level AS level
-FROM staging_events;
+FROM staging_events
+WHERE user_id IS NOT NULL;
 """)
 
 song_table_insert = ("""
-INSER INTO songs (song_id, title, artist_id, year, duration)
+INSERT INTO songs (song_id, title, artist_id, year, duration)
 SELECT DISTINCT song_id AS song_id,
     title AS title,
     artist_id AS artist_id,
     year AS year,
     duration AS duration
-FROM staging_songs;
+FROM staging_songs
+WHERE song_id IS NOT NULL;
 """)
 
 artist_table_insert = ("""
 INSERT INTO artists (artist_id, name, location, latitude, longitude)
-SELECT DISTINCT artist_id AS artsit_id,
+SELECT DISTINCT artist_id AS artist_id,
     artist_name AS name,
     artist_location AS lcoation,
     artist_latitude AS latitude,
     artist_longitude AS longitude
-FROM staging_songs;
+FROM staging_songs
+WHERE artist_id IS NOT NULL;
 """)
 
 time_table_insert = ("""
 INSERT INTO time (start_time, hour, day, week, month, year, weekday)
-SELECT DISTINCT to_timestamp(to_char(se.ts, '9999-99-99 99:99:99'),'YYYY-MM-DD HH24:MI:SS') AS start_time,
+SELECT DISTINCT to_timestamp(to_char(ts, '9999-99-99 99:99:99'),'YYYY-MM-DD HH24:MI:SS') AS start_time,
     EXTRACT (hour from ts) AS hour,
     EXTRACT (day from ts) AS day,
     EXTRACT (week from ts) AS day,
     EXTRACT (month from ts) AS month,
     EXTRACT (year from ts) AS year,
     EXTRACT (weekday from ts) AS weekday
-FROM staging_events;
+FROM staging_events
+WHERE start_time IS NOT NULL;
 """)
 
 # QUERY LISTS
