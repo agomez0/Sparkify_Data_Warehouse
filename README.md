@@ -46,7 +46,7 @@ Datasets:
     - year
 
 
-***Star Schema***  
+***Star Schema*** <br />
 **Fact Table**
 * songplay - records in event data associated with song plays i.e. records with page NextSong
     - songplay_id
