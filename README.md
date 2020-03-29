@@ -8,9 +8,9 @@ Datasets:
 * Song data: s3://udacity-dend/song_data
 * Log data: s3://udacity-dend/log_data
 
-Tables
+## Tables
 
-Staging Tables: Temporary tables with the raw data from the S3 buckets
+***Staging Tables:*** Temporary tables with the raw data from the S3 buckets
 * staging_events - event data when songs are played
 ![Log Data](log-data.png)
     - artist
@@ -46,8 +46,8 @@ Staging Tables: Temporary tables with the raw data from the S3 buckets
     - year
 
 
-Star Schema
-Fact Table
+***Star Schema***
+**Fact Table**
 * songplay - records in event data associated with song plays i.e. records with page NextSong
     - songplay_id
     - start_time
@@ -59,7 +59,7 @@ Fact Table
     - location
     - user_agent
 
-Dimension Tables
+**Dimension Tables**
 * users - users in the app
     - user_id
     - first_name
