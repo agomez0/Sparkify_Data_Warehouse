@@ -13,84 +13,84 @@ Tables
 Staging Tables: Temporary tables with the raw data from the S3 buckets
 * staging_events - event data when songs are played
 ![Log Data](log-data.png)
-- artist
-- auth
-- firstName
-- gender
-- itemInSession
-- lastName
-- length
-- level
-- location
-- method
-- page
-- registration
-- sessionId
-- song
-- status
-- ts
-- userAgent
-- userId
+    - artist
+    - auth
+    - firstName
+    - gender
+    - itemInSession
+    - lastName
+    - length
+    - level
+    - location
+    - method
+    - page
+    - registration
+    - sessionId
+    - song
+    - status
+    - ts
+    - userAgent
+    - userId
 
 * staging_songs - song and artist information
 `{"num_songs": 1, "artist_id": "ARJIE2Y1187B994AB7", "artist_latitude": null, "artist_longitude": null, "artist_location": "", "artist_name": "Line Renaud", "song_id": "SOUPIRU12A6D4FA1E1", "title": "Der Kleine Dompfaff", "duration": 152.92036, "year": 0}`
-- song_id
-- num_songs
-- title
-- artist_id
-- artist_latitude
-- artist_longitude
-- artist_location
-- artist_name
-- duration
-- year
+    - song_id
+    - num_songs
+    - title
+    - artist_id
+    - artist_latitude
+    - artist_longitude
+    - artist_location
+    - artist_name
+    - duration
+    - year
 
 
 Star Schema
 Fact Table
 * songplay - records in event data associated with song plays i.e. records with page NextSong
-- songplay_id
-- start_time
-- user_id
--  level
-- song_id
-- artist_id
-- session_id
-- location
-- user_agent
+    - songplay_id
+    - start_time
+    - user_id
+    -  level
+    - song_id
+    - artist_id
+    - session_id
+    - location
+    - user_agent
 
 Dimension Tables
 * users - users in the app
-- user_id
-- first_name
-- last_name
-- gender
-- level
+    - user_id
+    - first_name
+    - last_name
+    - gender
+    - level
 
 * songs - songs in music database
-- song_id
-- title
-- artist_id
-- year
-- duration
+    - song_id
+    - title
+    - artist_id
+    - year
+    - duration
 
 * artists - artists in music database
-- artist_id
-- name
-- location
-- lattitude
-- longitude
+    - artist_id
+    - name
+    - location
+    - lattitude
+    - longitude
 
 * time - timestamps of records in songplays broken down into specific units
-- start_time
-- hour
-- day
-- week
-- month
-- year
-- weekday
+    - start_time
+    - hour
+    - day
+    - week
+    - month
+    - year
+    - weekday
 
-How to run:
+**How to run:**
 1. Make a copy of `dwh_template.cfg` and rename it `dwh.cfg`
 2. Open the file and input all your parameters for your database and your AWS key and secret code (Don't type in anything in 'ARN' and 'HOST' yet)
 2. Travel to the downloaded directory via the command terminal
