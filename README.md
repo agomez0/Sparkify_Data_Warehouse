@@ -10,7 +10,7 @@ Datasets:
 
 ## Tables
 
-***Staging Tables:*** Temporary tables with the raw data from the S3 buckets
+***Staging Tables:*** Temporary tables with the raw data from the S3 buckets  
 * staging_events - event data when songs are played
 ![Log Data](log-data.png)
     - artist
@@ -46,7 +46,7 @@ Datasets:
     - year
 
 
-***Star Schema***
+***Star Schema***  
 **Fact Table**
 * songplay - records in event data associated with song plays i.e. records with page NextSong
     - songplay_id
