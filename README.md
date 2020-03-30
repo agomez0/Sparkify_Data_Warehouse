@@ -11,7 +11,7 @@ Datasets:
 ## Tables
 
 ***Staging Tables:*** Temporary tables with the raw data from the S3 buckets  
-* staging_events - event data when songs are played
+* staging_events - event data when songs are played <br />
 ![Log Data](log-data.png)
     - artist
     - auth
